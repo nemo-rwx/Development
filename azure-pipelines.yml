@@ -2,7 +2,7 @@ trigger:
   - master
 
 pool:
-  name: "Default" # Replace 'Default' with the name of your private Agent Pool if different
+  name: "Default" # Ensure this matches your agent pool name
 
 variables:
   dockerRegistryServiceConnection: "acr-conn"
@@ -17,7 +17,6 @@ stages:
         steps:
           - script: |
               echo "Running Unit Tests..."
-              # Add your test commands here
             displayName: "Step 1: Unit Test"
 
           - task: Docker@2
@@ -30,9 +29,8 @@ stages:
                 $(tag)
 
           - script: |
-              # Using Docker to run Trivy on your local machine
-              docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-              aquasec/trivy image $(acrHost)/threetier-app:$(tag)
+              REM Running Trivy via Docker on Windows
+              docker run --rm -v //var/run/docker.sock:/var/run/docker.sock aquasec/trivy image $(acrHost)/threetier-app:$(tag)
             displayName: "Step 3: Security Scan"
 
           - task: KubernetesManifest@1
