@@ -2,9 +2,12 @@ trigger:
   - master
 
 variables:
-  # UPDATE THESE TWO NAMES BELOW
-  dockerRegistryServiceConnection: "REPLACE_WITH_YOUR_ACR_CONN_NAME"
-  kubernetesServiceConnection: "REPLACE_WITH_YOUR_AKS_CONN_NAME"
+  # These names MUST match what you typed in the "Service Connection Name" boxes
+  dockerRegistryServiceConnection: 'acr-conn'
+  kubernetesServiceConnection: 'aks-conn'
+  
+  acrHost: 'threetierregistry.azurecr.io'
+  tag: '$(Build.BuildId)'
 
   acrHost: "threetierregistry.azurecr.io"
   tag: "$(Build.BuildId)"
