@@ -12,7 +12,7 @@ variables:
 
 stages:
   - stage: CI_CD
-    displayName: "Build and Deploy for ARM64"
+    displayName: "Build, Scan, and Deploy"
     jobs:
       - job: Build_And_Deploy
         steps:
@@ -20,18 +20,25 @@ stages:
             displayName: "1. Unit Test"
 
           - task: Docker@2
-            displayName: "2. Build and Push"
+            displayName: "2. Build and Push (ARM64)"
             inputs:
               containerRegistry: $(dockerRegistryServiceConnection)
               repository: "threetier-app"
               command: "buildAndPush"
-              # UPDATED: Matches your Standard_B2pls_v2 (ARM64) nodes
+              # Matches your Standard_B2pls_v2 nodes
               arguments: "--platform linux/arm64"
               tags: |
                 $(tag)
 
+          # --- FIX FOR UNAUTHORIZED ERROR ---
+          - task: Docker@2
+            displayName: "Login for Security Scan"
+            inputs:
+              containerRegistry: $(dockerRegistryServiceConnection)
+              command: "login"
+
           - script: |
-              REM Security scan using Trivy
+              REM Using the local docker socket to scan the image we just logged into
               docker run --rm -v //var/run/docker.sock:/var/run/docker.sock aquasec/trivy image $(acrHost)/threetier-app:$(tag)
             displayName: "3. Security Scan"
 
