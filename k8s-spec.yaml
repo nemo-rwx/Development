@@ -48,7 +48,7 @@ spec:
     spec:
       containers:
         - name: api
-          image: threetierregistry.azurecr.io/threetier-app:latest # Pipeline replaces this with $(tag)
+          image: threetierregistry.azurecr.io/threetier-app:latest
           env:
             - name: MONGO_URI
               value: "mongodb://mongo-service:27017"
@@ -83,7 +83,7 @@ spec:
     spec:
       containers:
         - name: web
-          image: threetierregistry.azurecr.io/threetier-app:latest # Pipeline replaces this with $(tag)
+          image: threetierregistry.azurecr.io/threetier-app:latest
 ---
 apiVersion: v1
 kind: Service

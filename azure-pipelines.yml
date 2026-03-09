@@ -5,6 +5,7 @@ pool:
   name: "Default" # Your Windows self-hosted agent pool
 
 variables:
+  # Ensure these names match your Azure DevOps Service Connections
   dockerRegistryServiceConnection: "acr-conn"
   kubernetesServiceConnection: "aks-conn"
   acrHost: "threetierregistry.azurecr.io"
@@ -22,8 +23,10 @@ stages:
             displayName: "Step 2: Build and Push"
             inputs:
               containerRegistry: $(dockerRegistryServiceConnection)
-              repository: "threetier-app" # Ensure this matches your ACR repo name
+              repository: "threetier-app"
               command: "buildAndPush"
+              # CRITICAL: Forces the Windows agent to build a Linux-compatible image
+              arguments: "--platform linux/amd64"
               tags: |
                 $(tag)
 
@@ -41,6 +44,6 @@ stages:
               namespace: "default"
               manifests: |
                 $(System.DefaultWorkingDirectory)/k8s-spec.yaml
-              # This part is CRITICAL to fix the 'Not Found' error
+              # This replaces "threetier-app:latest" in your YAML with the specific Build ID
               containers: |
                 $(acrHost)/threetier-app:$(tag)
