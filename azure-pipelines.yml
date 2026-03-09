@@ -2,9 +2,10 @@ trigger:
   - master
 
 variables:
-  # Replace with your actual names
-  dockerRegistryServiceConnection: "your-acr-service-connection"
-  kubernetesServiceConnection: "your-aks-service-connection"
+  # UPDATE THESE TWO NAMES BELOW
+  dockerRegistryServiceConnection: "REPLACE_WITH_YOUR_ACR_CONN_NAME"
+  kubernetesServiceConnection: "REPLACE_WITH_YOUR_AKS_CONN_NAME"
+
   acrHost: "threetierregistry.azurecr.io"
   tag: "$(Build.BuildId)"
 
@@ -14,48 +15,30 @@ pool:
 stages:
   - stage: CI_CD
     jobs:
-      - job: Pipeline
+      - job: Build_And_Deploy
         steps:
-          # 1. Unit Tests
           - script: |
-              echo "Running Frontend Tests..."
-              # cd frontend && npm install && npm test (uncomment when ready)
-              echo "Running Backend Tests..."
-              # cd backend && npm install && npm test (uncomment when ready)
-            displayName: "Step 1: Unit Tests"
+              echo "Running Unit Tests..."
+              # Add your test commands here
+            displayName: "Step 1: Unit Test"
 
-          # 2. Build Images
           - task: Docker@2
-            displayName: "Step 2: Build Images"
-            inputs:
-              command: "build"
-              repository: "threetier-app"
-              dockerfile: "**/Dockerfile"
-              tags: |
-                $(tag)
-
-          # 3. Scan Images (using Trivy)
-          - script: |
-              sudo apt-get install wget apt-transport-https gnupg lsb-release
-              wget -qO - https://aquasecurity.github.io/trivy-repo/dab/gpg.key | sudo apt-key add -
-              echo deb https://aquasecurity.github.io/trivy-repo/dab $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
-              sudo apt-get update && sudo apt-get install trivy
-              trivy image --severity HIGH,CRITICAL $(acrHost)/threetier-app:$(tag)
-            displayName: "Step 3: Security Scan"
-
-          # 4. Push to ACR
-          - task: Docker@2
-            displayName: "Step 4: Push to ACR"
+            displayName: "Step 2: Build and Push"
             inputs:
               containerRegistry: $(dockerRegistryServiceConnection)
               repository: "threetier-app"
-              command: "push"
+              command: "buildAndPush"
               tags: |
                 $(tag)
 
-          # 5. Update YAML & Deploy to AKS
+          - script: |
+              # Simple scan command
+              docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+              aquasec/trivy image $(acrHost)/threetier-app:$(tag)
+            displayName: "Step 3: Security Scan"
+
           - task: KubernetesManifest@1
-            displayName: "Step 5: Deploy to AKS"
+            displayName: "Step 4: Deploy to AKS"
             inputs:
               action: "deploy"
               connectionType: "kubernetesServiceConnection"
@@ -64,5 +47,4 @@ stages:
               manifests: |
                 $(System.DefaultWorkingDirectory)/k8s-spec.yaml
               containers: |
-                $(acrHost)/frontend:$(tag)
-                $(acrHost)/backend:$(tag)
+                $(acrHost)/threetier-app:$(tag)
