@@ -1,13 +1,7 @@
-trigger:
-  - master
-
 variables:
-  # These names MUST match what you typed in the "Service Connection Name" boxes
-  dockerRegistryServiceConnection: 'acr-conn'
-  kubernetesServiceConnection: 'aks-conn'
-  
-  acrHost: 'threetierregistry.azurecr.io'
-  tag: '$(Build.BuildId)'
+  # These MUST match the "Service Connection Name" you typed above
+  dockerRegistryServiceConnection: "acr-conn"
+  kubernetesServiceConnection: "aks-conn"
 
   acrHost: "threetierregistry.azurecr.io"
   tag: "$(Build.BuildId)"
@@ -20,11 +14,11 @@ stages:
     jobs:
       - job: Build_And_Deploy
         steps:
-          - script: |
-              echo "Running Unit Tests..."
-              # Add your test commands here
+          # 1. Unit Test Placeholder
+          - script: echo "Running Tests..."
             displayName: "Step 1: Unit Test"
 
+          # 2. Build and Push to ACR
           - task: Docker@2
             displayName: "Step 2: Build and Push"
             inputs:
@@ -34,12 +28,13 @@ stages:
               tags: |
                 $(tag)
 
+          # 3. Security Scan (Trivy)
           - script: |
-              # Simple scan command
               docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
               aquasec/trivy image $(acrHost)/threetier-app:$(tag)
             displayName: "Step 3: Security Scan"
 
+          # 4. Deploy to AKS
           - task: KubernetesManifest@1
             displayName: "Step 4: Deploy to AKS"
             inputs:
