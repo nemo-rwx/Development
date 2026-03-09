@@ -8,31 +8,33 @@ services:
       - "3000:3000"
     networks:
       - network-backend
+
   api:
     build: ./backend
     depends_on:
       - mongo
     ports:
       - "3001:3001"
-    networks: 
-     - network-backend
-  
+    environment:
+      - MONGO_URI # <--- This "grabs" the secret from the Azure Agent
+    networks:
+      - network-backend
+
   mongo:
     image: mongo
     restart: always
-    volumes: 
+    volumes:
       - mongodb_data:/data/db
-    environment: 
-      MONGODB_INITDB_ROOT_USERNAME: username
-      MONGODB_INITDB_ROOT_PASSWORD: password
-    # uncomment following lines to access db locally
-    # ports:
-    #   - 27017:27017
-    networks: 
-     - network-backend
+    environment:
+      # Since we are using a URI with credentials,
+      # the DB must be initialized with the SAME credentials.
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password123
+    networks:
+      - network-backend
 
 networks:
   network-backend:
 
-volumes: 
+volumes:
   mongodb_data:
