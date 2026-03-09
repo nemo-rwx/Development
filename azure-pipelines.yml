@@ -5,7 +5,6 @@ pool:
   name: "Default" # Your Windows self-hosted agent pool
 
 variables:
-  # Ensure these names match your Azure DevOps Service Connections
   dockerRegistryServiceConnection: "acr-conn"
   kubernetesServiceConnection: "aks-conn"
   acrHost: "threetierregistry.azurecr.io"
@@ -13,30 +12,31 @@ variables:
 
 stages:
   - stage: CI_CD
+    displayName: "Build and Deploy for ARM64"
     jobs:
       - job: Build_And_Deploy
         steps:
           - script: echo "Running Unit Tests..."
-            displayName: "Step 1: Unit Test"
+            displayName: "1. Unit Test"
 
           - task: Docker@2
-            displayName: "Step 2: Build and Push"
+            displayName: "2. Build and Push"
             inputs:
               containerRegistry: $(dockerRegistryServiceConnection)
               repository: "threetier-app"
               command: "buildAndPush"
-              # CRITICAL: Forces the Windows agent to build a Linux-compatible image
-              arguments: "--platform linux/amd64"
+              # UPDATED: Matches your Standard_B2pls_v2 (ARM64) nodes
+              arguments: "--platform linux/arm64"
               tags: |
                 $(tag)
 
           - script: |
               REM Security scan using Trivy
               docker run --rm -v //var/run/docker.sock:/var/run/docker.sock aquasec/trivy image $(acrHost)/threetier-app:$(tag)
-            displayName: "Step 3: Security Scan"
+            displayName: "3. Security Scan"
 
           - task: KubernetesManifest@1
-            displayName: "Step 4: Deploy to AKS"
+            displayName: "4. Deploy to AKS"
             inputs:
               action: "deploy"
               connectionType: "kubernetesServiceConnection"
@@ -44,6 +44,5 @@ stages:
               namespace: "default"
               manifests: |
                 $(System.DefaultWorkingDirectory)/k8s-spec.yaml
-              # This replaces "threetier-app:latest" in your YAML with the specific Build ID
               containers: |
                 $(acrHost)/threetier-app:$(tag)
