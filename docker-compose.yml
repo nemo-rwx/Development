@@ -16,7 +16,8 @@ services:
     ports:
       - "3001:3001"
     environment:
-      - MONGO_URI # <--- This "grabs" the secret from the Azure Agent
+      # Azure Variable theke Pura Connection String-ti nibe
+      - MONGO_URI=${MONGO_URI}
     networks:
       - network-backend
 
@@ -26,10 +27,9 @@ services:
     volumes:
       - mongodb_data:/data/db
     environment:
-      # Since we are using a URI with credentials,
-      # the DB must be initialized with the SAME credentials.
-      - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=password123
+      # DB initialize korar jonno username o password
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USER}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASS}
     networks:
       - network-backend
 
