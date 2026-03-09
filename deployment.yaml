@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: threetier-app
+  labels:
+    app: threetier
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: threetier
+  template:
+    metadata:
+      labels:
+        app: threetier
+    spec:
+      containers:
+        - name: web-app
+          # Replace 'threetierregistry' with your actual ACR name
+          image: threetierregistry.azurecr.io/myapp:latest
+          ports:
+            - containerPort: 80

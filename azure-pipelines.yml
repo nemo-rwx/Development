@@ -1,25 +1,68 @@
 trigger:
   - master
 
+variables:
+  # Replace with your actual names
+  dockerRegistryServiceConnection: "your-acr-service-connection"
+  kubernetesServiceConnection: "your-aks-service-connection"
+  acrHost: "threetierregistry.azurecr.io"
+  tag: "$(Build.BuildId)"
+
 pool:
-  name: "Default"
+  vmImage: "ubuntu-latest"
 
-steps:
-  # 1. Docker version check (troubleshooting-er jonno thak)
-  - script: |
-      docker compose version
-    displayName: "Check Docker Version"
+stages:
+  - stage: CI_CD
+    jobs:
+      - job: Pipeline
+        steps:
+          # 1. Unit Tests
+          - script: |
+              echo "Running Frontend Tests..."
+              # cd frontend && npm install && npm test (uncomment when ready)
+              echo "Running Backend Tests..."
+              # cd backend && npm install && npm test (uncomment when ready)
+            displayName: "Step 1: Unit Tests"
 
-  # 2. Build ebong Run (Secrets soho)
-  - script: |
-      docker compose up -d --build
-    displayName: "Deploy and Keep Services Running"
-    env:
-      MONGO_URI: $(MONGO_URI)
-      MONGO_USER: $(MONGO_USER)
-      MONGO_PASS: $(MONGO_PASS)
+          # 2. Build Images
+          - task: Docker@2
+            displayName: "Step 2: Build Images"
+            inputs:
+              command: "build"
+              repository: "threetier-app"
+              dockerfile: "**/Dockerfile"
+              tags: |
+                $(tag)
 
-  # 3. Running containers check s
-  - script: |
-      docker ps
-    displayName: "Verify Running Containers"
+          # 3. Scan Images (using Trivy)
+          - script: |
+              sudo apt-get install wget apt-transport-https gnupg lsb-release
+              wget -qO - https://aquasecurity.github.io/trivy-repo/dab/gpg.key | sudo apt-key add -
+              echo deb https://aquasecurity.github.io/trivy-repo/dab $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
+              sudo apt-get update && sudo apt-get install trivy
+              trivy image --severity HIGH,CRITICAL $(acrHost)/threetier-app:$(tag)
+            displayName: "Step 3: Security Scan"
+
+          # 4. Push to ACR
+          - task: Docker@2
+            displayName: "Step 4: Push to ACR"
+            inputs:
+              containerRegistry: $(dockerRegistryServiceConnection)
+              repository: "threetier-app"
+              command: "push"
+              tags: |
+                $(tag)
+
+          # 5. Update YAML & Deploy to AKS
+          - task: KubernetesManifest@1
+            displayName: "Step 5: Deploy to AKS"
+            inputs:
+              action: "deploy"
+              connectionType: "kubernetesServiceConnection"
+              kubernetesServiceConnection: $(kubernetesServiceConnection)
+              namespace: "default"
+              manifests: |
+                $(System.DefaultWorkingDirectory)/k8s-spec.yaml
+              containers: |
+                $(acrHost)/frontend:$(tag)
+                $(acrHost)/backend:$(tag)
