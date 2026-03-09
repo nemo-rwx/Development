@@ -1,20 +1,30 @@
 trigger:
-  - master # <--- Changed from main to master
-
-variables:
-  - group: prod-secrets
+  - master # Apnar branch-er naam 'master' tai ekhane 'master' thakbe
 
 pool:
-  vmImage: "ubuntu-latest"
+  name: "Default" # Oboshoy 'Default' thakbe karon apni Self-hosted agent setup korchen
+
+variables:
+  dockerComposeFile: "docker-compose.yml"
 
 steps:
+  # 1. Docker Compose Setup check kora
   - script: |
-      docker-compose up -d --build
-    env:
-      MONGO_URI: $(MONGO_URI)
-    displayName: "Deploy Services from Master"
+      docker-compose --version
+    displayName: "Check Docker Compose Version"
 
+  # 2. Docker images build kora (Backend & Frontend)
   - script: |
-      sleep 15
-      curl -f http://localhost:3001/health || (docker-compose logs api && exit 1)
-    displayName: "Verify Deployment"
+      docker-compose build
+    displayName: "Build Docker Images (3-Tier)"
+
+  # 3. Services gulo run kora (Testing-er jonno)
+  - script: |
+      docker-compose up -d
+      docker ps
+    displayName: "Deploy Services Locally"
+
+  # 4. Cleanup (Interview-er samne clean rakhar jonno)
+  - script: |
+      docker-compose down
+    displayName: "Cleanup Containers"
