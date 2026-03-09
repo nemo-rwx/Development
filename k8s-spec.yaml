@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: mongo
-          image: mongo
+          image: mongo:latest
           ports:
             - containerPort: 27017
 ---
@@ -48,7 +48,7 @@ spec:
     spec:
       containers:
         - name: api
-          image: threetierregistry.azurecr.io/backend:latest
+          image: threetierregistry.azurecr.io/threetier-app:latest # Pipeline replaces this with $(tag)
           env:
             - name: MONGO_URI
               value: "mongodb://mongo-service:27017"
@@ -83,7 +83,7 @@ spec:
     spec:
       containers:
         - name: web
-          image: threetierregistry.azurecr.io/frontend:latest
+          image: threetierregistry.azurecr.io/threetier-app:latest # Pipeline replaces this with $(tag)
 ---
 apiVersion: v1
 kind: Service
